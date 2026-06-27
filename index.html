@@ -1,0 +1,2726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LifeOS — Your Operating System for Life</title>
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg:          #09090f;
+  --surface:     #111118;
+  --card:        #16161f;
+  --card-hover:  #1c1c28;
+  --border:      rgba(255,255,255,0.07);
+  --border-hi:   rgba(255,255,255,0.13);
+  --text:        #e8e8f0;
+  --muted:       #6b6b80;
+  --faint:       #2a2a38;
+
+  --violet:      #7c6af7;
+  --violet-dim:  rgba(124,106,247,0.15);
+  --violet-glow: rgba(124,106,247,0.35);
+  --green:       #3ecf8e;
+  --green-dim:   rgba(62,207,142,0.15);
+  --amber:       #f7a26a;
+  --amber-dim:   rgba(247,162,106,0.15);
+  --red:         #e25c5c;
+  --red-dim:     rgba(226,92,92,0.15);
+  --cyan:        #3ec6f7;
+  --cyan-dim:    rgba(62,198,247,0.15);
+  --pink:        #d97cd9;
+  --pink-dim:    rgba(217,124,217,0.15);
+
+  --radius-sm:   8px;
+  --radius:      14px;
+  --radius-lg:   20px;
+  --sidebar-w:   220px;
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text);
+  background: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color var(--transition);
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px var(--violet-dim);
+}
+select option { background: var(--card); }
+textarea { resize: vertical; min-height: 80px; }
+a { color: var(--violet); text-decoration: none; }
+ul { list-style: none; }
+h1,h2,h3,h4 { font-weight: 600; letter-spacing: -0.02em; }
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 99px; }
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  transition: transform var(--transition);
+}
+.sidebar-logo {
+  padding: 22px 18px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--violet), var(--cyan));
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px var(--violet-glow);
+}
+.logo-text { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.03em; }
+.logo-text span { color: var(--violet); }
+
+.sidebar-nav { padding: 12px 8px; flex: 1; overflow-y: auto; }
+.nav-section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 10px 6px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-bottom: 2px;
+  user-select: none;
+}
+.nav-item:hover { background: var(--card); color: var(--text); }
+.nav-item.active {
+  background: var(--violet-dim);
+  color: var(--violet);
+}
+.nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid var(--border);
+}
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.user-chip:hover { background: var(--card); }
+.avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--violet), var(--pink));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: 0.72rem; color: var(--muted); }
+
+/* Main */
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+}
+.page { display: none; padding: 28px 32px; max-width: 1200px; }
+.page.active { display: block; }
+
+/* Page header */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+.page-title { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.03em; }
+.page-subtitle { font-size: 0.85rem; color: var(--muted); margin-top: 3px; }
+
+/* ============================================================
+   GLASS CARD
+   ============================================================ */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.card:hover { border-color: var(--border-hi); }
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+  pointer-events: none;
+}
+.card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+.card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.card-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all var(--transition);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--violet);
+  color: #fff;
+}
+.btn-primary:hover { background: #8f7ef9; box-shadow: 0 4px 20px var(--violet-glow); }
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--faint); color: var(--text); border-color: var(--border-hi); }
+.btn-danger {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(226,92,92,0.2);
+}
+.btn-danger:hover { background: var(--red); color: #fff; }
+.btn-success {
+  background: var(--green-dim);
+  color: var(--green);
+}
+.btn-success:hover { background: var(--green); color: #000; }
+.btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+.btn-icon {
+  padding: 7px;
+  border-radius: var(--radius-sm);
+  background: var(--faint);
+  color: var(--muted);
+  transition: all var(--transition);
+  font-size: 0.9rem;
+}
+.btn-icon:hover { background: var(--card-hover); color: var(--text); }
+
+/* ============================================================
+   GRID HELPERS
+   ============================================================ */
+.grid { display: grid; gap: 16px; }
+.grid-4 { grid-template-columns: repeat(4,1fr); }
+.grid-3 { grid-template-columns: repeat(3,1fr); }
+.grid-2 { grid-template-columns: repeat(2,1fr); }
+.grid-auto { grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); }
+
+/* ============================================================
+   PROGRESS BAR
+   ============================================================ */
+.progress-bar {
+  height: 5px;
+  background: var(--faint);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--violet);
+}
+
+/* ============================================================
+   BADGE / TAG / CHIP
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.badge-violet { background: var(--violet-dim); color: var(--violet); }
+.badge-green  { background: var(--green-dim);  color: var(--green); }
+.badge-amber  { background: var(--amber-dim);  color: var(--amber); }
+.badge-red    { background: var(--red-dim);    color: var(--red); }
+.badge-cyan   { background: var(--cyan-dim);   color: var(--cyan); }
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 460px;
+  transform: translateY(20px) scale(0.97);
+  transition: transform var(--transition);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-overlay.open .modal { transform: none; }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.modal-title { font-size: 1.1rem; font-weight: 700; }
+.modal-close {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--faint);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.modal-close:hover { background: var(--card-hover); color: var(--text); }
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast-container {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  z-index: 2000;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  background: var(--card);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  max-width: 300px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  animation: slideIn 0.3s ease forwards;
+}
+.toast.removing { animation: slideOut 0.3s ease forwards; }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes slideOut {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateX(20px); }
+}
+.toast-icon { font-size: 1.1rem; }
+
+/* ============================================================
+   AMBIENT ORB (Dashboard hero bg)
+   ============================================================ */
+.orb-container {
+  position: absolute;
+  inset: 0; overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.18;
+  animation: float 8s ease-in-out infinite;
+}
+.orb-1 { width: 200px; height: 200px; background: var(--violet); top: -60px; right: 20px; animation-delay: 0s; }
+.orb-2 { width: 150px; height: 150px; background: var(--cyan); bottom: -40px; left: 30px; animation-delay: -4s; }
+@keyframes float {
+  0%,100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-20px) scale(1.08); }
+}
+
+/* ============================================================
+   DASHBOARD PAGE
+   ============================================================ */
+.hero-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 28px 24px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-greeting {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  position: relative; z-index: 1;
+}
+.hero-greeting span { color: var(--violet); }
+.hero-datetime {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 16px;
+  margin-top: 10px;
+}
+.hero-time {
+  font-family: var(--mono);
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--text);
+}
+.hero-date-info { color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
+
+.stat-cards { margin-bottom: 20px; }
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  position: relative; overflow: hidden;
+}
+.stat-card::after {
+  content: attr(data-icon);
+  position: absolute;
+  right: 14px; top: 14px;
+  font-size: 1.5rem;
+  opacity: 0.3;
+}
+.stat-label { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+.stat-value { font-size: 1.7rem; font-weight: 700; font-family: var(--mono); letter-spacing: -0.04em; line-height: 1; }
+.stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 5px; }
+
+.daily-progress {
+  margin-bottom: 20px;
+}
+.dp-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.dp-title { font-size: 1rem; font-weight: 700; }
+.dp-pct { font-family: var(--mono); font-weight: 700; color: var(--violet); }
+.dp-bar {
+  height: 8px;
+  background: var(--faint);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.dp-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--violet), var(--cyan));
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.recent-section { margin-bottom: 20px; }
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title { font-size: 0.95rem; font-weight: 700; }
+
+/* ============================================================
+   TASK ITEM
+   ============================================================ */
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  transition: all var(--transition);
+  cursor: pointer;
+}
+.task-item:hover { border-color: var(--border-hi); background: var(--card-hover); }
+.task-item.done { opacity: 0.5; }
+.task-item.done .task-name { text-decoration: line-through; color: var(--muted); }
+.task-check {
+  width: 20px; height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-hi);
+  background: transparent;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.task-item.done .task-check {
+  background: var(--green);
+  border-color: var(--green);
+  color: #000;
+}
+.task-name { flex: 1; font-size: 0.9rem; font-weight: 500; }
+.task-badge { flex-shrink: 0; }
+.task-actions {
+  display: flex; gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.task-item:hover .task-actions { opacity: 1; }
+.task-time { font-size: 0.75rem; color: var(--muted); font-family: var(--mono); white-space: nowrap; }
+
+/* ============================================================
+   STUDY TIMER
+   ============================================================ */
+.timer-display {
+  font-family: var(--mono);
+  font-size: 3.5rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  text-align: center;
+  padding: 20px 0;
+  color: var(--text);
+  line-height: 1;
+}
+.timer-subject-bar {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.subject-pill {
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.subject-pill.selected { color: #fff !important; border-color: transparent !important; }
+.timer-controls {
+  display: flex; gap: 10px; justify-content: center;
+  margin-top: 4px;
+}
+.timer-btn {
+  padding: 12px 28px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all var(--transition);
+  letter-spacing: 0.02em;
+}
+.timer-start { background: var(--green); color: #000; }
+.timer-start:hover { background: #4dde9d; box-shadow: 0 4px 20px var(--green-dim); }
+.timer-stop { background: var(--red); color: #fff; }
+.timer-stop:hover { background: #e87070; }
+.timer-reset { background: var(--faint); color: var(--muted); }
+.timer-reset:hover { background: var(--card-hover); color: var(--text); }
+
+.study-log-item {
+  display: flex; align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  gap: 10px;
+}
+.study-log-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.study-log-name { flex: 1; font-weight: 600; }
+.study-log-time { font-family: var(--mono); color: var(--muted); }
+.study-log-date { font-size: 0.72rem; color: var(--muted); }
+
+/* ============================================================
+   SUBJECT CARD
+   ============================================================ */
+.subject-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  transition: all var(--transition);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.subject-card:hover { border-color: var(--border-hi); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.subject-icon { font-size: 2rem; margin-bottom: 10px; line-height: 1; }
+.subject-name { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+.subject-today {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 10px;
+  font-family: var(--mono);
+}
+.subject-bar { height: 4px; background: var(--faint); border-radius: 99px; overflow: hidden; }
+.subject-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+
+/* ============================================================
+   MONEY TRACKER
+   ============================================================ */
+.money-hero {
+  background: linear-gradient(135deg, #1a2030, #111118);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 20px;
+  position: relative; overflow: hidden;
+}
+.money-label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+.money-balance {
+  font-family: var(--mono);
+  font-size: 2.8rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+.money-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.money-stat {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+.money-stat-label { font-size: 0.72rem; color: var(--muted); margin-bottom: 4px; }
+.money-stat-val { font-family: var(--mono); font-size: 1.2rem; font-weight: 700; }
+
+.tx-item {
+  display: flex; align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  gap: 12px;
+  transition: all var(--transition);
+}
+.tx-item:hover { border-color: var(--border-hi); background: var(--card-hover); }
+.tx-dot {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.tx-info { flex: 1; min-width: 0; }
+.tx-name { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-category { font-size: 0.72rem; color: var(--muted); }
+.tx-amount { font-family: var(--mono); font-size: 0.95rem; font-weight: 700; white-space: nowrap; }
+.tx-del { opacity: 0; transition: opacity var(--transition); }
+.tx-item:hover .tx-del { opacity: 1; }
+
+/* ============================================================
+   NOTES
+   ============================================================ */
+.note-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: all var(--transition);
+  height: 160px;
+  overflow: hidden;
+  position: relative;
+}
+.note-card:hover { border-color: var(--border-hi); transform: translateY(-2px); }
+.note-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--card));
+}
+.note-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; }
+.note-body { font-size: 0.82rem; color: var(--muted); line-height: 1.6; white-space: pre-wrap; }
+.note-date { font-size: 0.72rem; color: var(--muted); position: absolute; bottom: 12px; right: 14px; z-index: 1; }
+.note-add {
+  background: var(--card);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  height: 160px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--muted);
+}
+.note-add:hover { border-color: var(--violet); color: var(--violet); background: var(--violet-dim); }
+
+/* ============================================================
+   CALENDAR
+   ============================================================ */
+.cal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.cal-month { font-size: 1.1rem; font-weight: 700; }
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-day-label {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.cal-day {
+  aspect-ratio: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  gap: 2px;
+}
+.cal-day:hover { background: var(--faint); }
+.cal-day.today { background: var(--violet-dim); color: var(--violet); font-weight: 700; }
+.cal-day.other-month { color: var(--muted); opacity: 0.4; }
+.cal-day.has-event::after {
+  content: '';
+  width: 4px; height: 4px;
+  background: var(--violet);
+  border-radius: 50%;
+  position: absolute;
+  bottom: 4px;
+}
+.cal-day.selected { background: var(--violet); color: #fff; }
+
+.event-item {
+  display: flex; align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  gap: 12px;
+  transition: all var(--transition);
+}
+.event-item:hover { border-color: var(--border-hi); }
+.event-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.event-info { flex: 1; }
+.event-name { font-size: 0.88rem; font-weight: 600; }
+.event-date { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+.event-del { opacity: 0; transition: opacity var(--transition); }
+.event-item:hover .event-del { opacity: 1; }
+
+/* ============================================================
+   CHART (Canvas-based)
+   ============================================================ */
+.chart-container { position: relative; height: 180px; width: 100%; }
+canvas.chart { width: 100% !important; height: 100% !important; }
+
+/* ============================================================
+   COLOR PICKER ROW
+   ============================================================ */
+.color-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.color-swatch {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform var(--transition);
+  border: 2px solid transparent;
+}
+.color-swatch:hover { transform: scale(1.2); }
+.color-swatch.selected { border-color: #fff; }
+
+/* ============================================================
+   MOBILE NAV (bottom bar)
+   ============================================================ */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+}
+.mobile-nav-inner { display: flex; justify-content: space-around; }
+.mobile-nav-item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+  transition: color var(--transition);
+}
+.mobile-nav-item.active { color: var(--violet); }
+.mobile-nav-item .m-icon { font-size: 1.2rem; }
+
+/* ============================================================
+   ANALYTICS
+   ============================================================ */
+.analytics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.week-bar-container { display: flex; align-items: flex-end; gap: 6px; height: 100px; }
+.week-bar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+.week-bar-wrap { flex: 1; display: flex; align-items: flex-end; width: 100%; border-radius: 4px 4px 0 0; overflow: hidden; background: var(--faint); }
+.week-bar-fill { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.6s cubic-bezier(0.4,0,0.2,1); background: var(--violet); opacity: 0.8; }
+.week-bar-label { font-size: 0.68rem; color: var(--muted); font-weight: 600; }
+
+/* Subject target rows */
+.target-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.target-row:last-child { border-bottom: none; }
+.target-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.target-name { font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.target-stat { font-size: 0.78rem; color: var(--muted); font-family: var(--mono); }
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+.empty-state .es-icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4; }
+.empty-state .es-title { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.empty-state .es-sub { font-size: 0.82rem; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .grid-4 { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 700px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: none; }
+  .main { margin-left: 0; padding-bottom: 70px; }
+  .page { padding: 18px 16px; }
+  .mobile-nav { display: block; }
+  .grid-4 { grid-template-columns: repeat(2,1fr); }
+  .grid-3 { grid-template-columns: repeat(2,1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+  .analytics-row { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .hero-time { font-size: 1.8rem; }
+  .money-balance { font-size: 2rem; }
+  .timer-display { font-size: 2.4rem; }
+}
+@media (max-width: 460px) {
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.mt-4 { margin-top: 4px; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-20 { margin-bottom: 20px; }
+.text-muted { color: var(--muted); }
+.text-sm { font-size: 0.82rem; }
+.text-xs { font-size: 0.72rem; }
+.font-mono { font-family: var(--mono); }
+.font-bold { font-weight: 700; }
+.w-full { width: 100%; }
+.hidden { display: none !important; }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">Life<span>OS</span></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Workspace</div>
+      <div class="nav-item active" data-page="dashboard">
+        <span class="icon">⊞</span> Dashboard
+      </div>
+      <div class="nav-item" data-page="tasks">
+        <span class="icon">✓</span> Daily Routine
+      </div>
+      <div class="nav-item" data-page="timer">
+        <span class="icon">◷</span> Study Timer
+      </div>
+      <div class="nav-item" data-page="subjects">
+        <span class="icon">◈</span> Subjects
+      </div>
+
+      <div class="nav-section-label">Tracking</div>
+      <div class="nav-item" data-page="money">
+        <span class="icon">◎</span> Money
+      </div>
+      <div class="nav-item" data-page="notes">
+        <span class="icon">≡</span> Notes
+      </div>
+      <div class="nav-item" data-page="calendar">
+        <span class="icon">▦</span> Calendar
+      </div>
+
+      <div class="nav-section-label">Insights</div>
+      <div class="nav-item" data-page="analytics">
+        <span class="icon">↗</span> Analytics
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip" onclick="openNameModal()">
+        <div class="avatar" id="sidebarAvatar">U</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">User</div>
+          <div class="user-role">Click to edit name</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="main">
+
+    <!-- ======================== DASHBOARD ======================== -->
+    <section class="page active" id="page-dashboard">
+      <!-- Hero -->
+      <div class="hero-card">
+        <div class="orb-container">
+          <div class="orb orb-1"></div>
+          <div class="orb orb-2"></div>
+        </div>
+        <div class="hero-greeting" id="greeting">Good morning, <span id="userName">User</span> 👋</div>
+        <div class="hero-datetime">
+          <div class="hero-time" id="liveTime">00:00:00</div>
+          <div class="hero-date-info">
+            <div id="liveDate">Saturday, June 27</div>
+            <div id="liveYear" class="text-muted" style="font-size:0.78rem">2026</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="grid grid-4 stat-cards" id="dashStats">
+        <div class="stat-card" data-icon="🔥">
+          <div class="stat-label">Study Streak</div>
+          <div class="stat-value" id="dashStreak">0</div>
+          <div class="stat-sub">days in a row</div>
+        </div>
+        <div class="stat-card" data-icon="⏱">
+          <div class="stat-label">Today's Study</div>
+          <div class="stat-value" id="dashTodayStudy">0h 0m</div>
+          <div class="stat-sub">sessions logged</div>
+        </div>
+        <div class="stat-card" data-icon="✓">
+          <div class="stat-label">Tasks Done</div>
+          <div class="stat-value" id="dashTasksDone">0/0</div>
+          <div class="stat-sub">today's routine</div>
+        </div>
+        <div class="stat-card" data-icon="◎">
+          <div class="stat-label">Net Balance</div>
+          <div class="stat-value" id="dashBalance" style="font-size:1.3rem">$0.00</div>
+          <div class="stat-sub">income − expenses</div>
+        </div>
+      </div>
+
+      <!-- Daily Progress -->
+      <div class="card daily-progress">
+        <div class="dp-header">
+          <span class="dp-title">Day Progress</span>
+          <span class="dp-pct" id="dayProgressPct">0%</span>
+        </div>
+        <div class="dp-bar">
+          <div class="dp-fill" id="dayProgressFill" style="width:0%"></div>
+        </div>
+        <div class="text-xs text-muted mt-8" id="dayProgressDesc">0 of 0 tasks completed</div>
+      </div>
+
+      <!-- Recent Tasks & Study Log -->
+      <div class="grid grid-2 gap-16">
+        <div>
+          <div class="section-header">
+            <span class="section-title">Today's Tasks</span>
+            <button class="btn btn-ghost btn-sm" onclick="navigate('tasks')">View all →</button>
+          </div>
+          <div id="dashRecentTasks">
+            <div class="empty-state" style="padding:20px">
+              <div class="es-icon">📋</div>
+              <div class="es-sub">No tasks yet</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-header">
+            <span class="section-title">Recent Study Sessions</span>
+            <button class="btn btn-ghost btn-sm" onclick="navigate('timer')">Timer →</button>
+          </div>
+          <div id="dashRecentStudy">
+            <div class="empty-state" style="padding:20px">
+              <div class="es-icon">📚</div>
+              <div class="es-sub">No sessions yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== TASKS ======================== -->
+    <section class="page" id="page-tasks">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Daily Routine</div>
+          <div class="page-subtitle">Manage your tasks and build habits</div>
+        </div>
+        <button class="btn btn-primary" onclick="openTaskModal()">+ Add Task</button>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="card mb-16">
+        <div class="dp-header">
+          <span class="dp-title">Today's Completion</span>
+          <span class="dp-pct" id="taskProgressPct">0%</span>
+        </div>
+        <div class="dp-bar">
+          <div class="dp-fill" id="taskProgressFill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Task List -->
+      <div id="taskList"></div>
+    </section>
+
+    <!-- ======================== STUDY TIMER ======================== -->
+    <section class="page" id="page-timer">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Study Timer</div>
+          <div class="page-subtitle">Track your focus sessions by subject</div>
+        </div>
+      </div>
+
+      <div class="grid grid-2 gap-16" style="align-items:start">
+        <!-- Timer -->
+        <div>
+          <div class="card mb-16">
+            <div class="card-title">Select Subject</div>
+            <div class="timer-subject-bar" id="timerSubjectBar">
+              <div class="text-muted text-sm">Add subjects first →</div>
+            </div>
+            <div class="timer-display" id="timerDisplay">00:00:00</div>
+            <div class="timer-controls">
+              <button class="btn timer-btn timer-start" id="timerStartBtn" onclick="timerStart()">▶ Start</button>
+              <button class="btn timer-btn timer-stop hidden" id="timerStopBtn" onclick="timerStop()">■ Stop</button>
+              <button class="btn timer-btn timer-reset" onclick="timerReset()">↺</button>
+            </div>
+          </div>
+
+          <!-- Daily targets -->
+          <div class="card">
+            <div class="card-title">Daily Targets</div>
+            <div id="timerTargets">
+              <div class="empty-state" style="padding:20px">
+                <div class="es-icon">🎯</div>
+                <div class="es-sub">Add subjects to set targets</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Study Log -->
+        <div>
+          <div class="section-header mb-12">
+            <span class="section-title">Study Log</span>
+            <button class="btn btn-ghost btn-sm" onclick="clearStudyLog()">Clear</button>
+          </div>
+          <div id="studyLog"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== SUBJECTS ======================== -->
+    <section class="page" id="page-subjects">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Subjects</div>
+          <div class="page-subtitle">Customize your study areas</div>
+        </div>
+        <button class="btn btn-primary" onclick="openSubjectModal()">+ Add Subject</button>
+      </div>
+      <div class="grid grid-auto gap-16" id="subjectGrid"></div>
+    </section>
+
+    <!-- ======================== MONEY ======================== -->
+    <section class="page" id="page-money">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Money Tracker</div>
+          <div class="page-subtitle">Track income, savings, and expenses</div>
+        </div>
+        <button class="btn btn-primary" onclick="openMoneyModal()">+ Add Transaction</button>
+      </div>
+
+      <!-- Balance Hero -->
+      <div class="money-hero mb-20">
+        <div class="orb-container">
+          <div class="orb orb-1" style="background:var(--green);right:-20px;top:-60px;opacity:0.12"></div>
+        </div>
+        <div class="money-label">Net Balance</div>
+        <div class="money-balance" id="moneyBalance">$0.00</div>
+        <div class="money-grid">
+          <div class="money-stat">
+            <div class="money-stat-label">💚 Total Income</div>
+            <div class="money-stat-val" id="moneyIncome" style="color:var(--green)">$0.00</div>
+          </div>
+          <div class="money-stat">
+            <div class="money-stat-label">🔴 Total Expenses</div>
+            <div class="money-stat-val" id="moneyExpenses" style="color:var(--red)">$0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart + Transactions -->
+      <div class="grid grid-2 gap-16" style="align-items:start">
+        <div>
+          <div class="card mb-16">
+            <div class="card-title">Category Breakdown</div>
+            <div class="chart-container">
+              <canvas id="moneyChart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-header mb-12">
+            <span class="section-title">Transactions</span>
+            <span class="text-xs text-muted" id="txCount">0 entries</span>
+          </div>
+          <div id="txList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== NOTES ======================== -->
+    <section class="page" id="page-notes">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Notes</div>
+          <div class="page-subtitle">Capture thoughts and to-dos</div>
+        </div>
+      </div>
+
+      <!-- Quick Todo -->
+      <div class="card mb-20">
+        <div class="flex items-center justify-between mb-12">
+          <div class="section-title">Quick To-Dos</div>
+          <div class="flex gap-8">
+            <input type="text" id="todoInput" placeholder="Add a to-do..." style="max-width:280px" onkeydown="if(event.key==='Enter')addTodo()">
+            <button class="btn btn-primary btn-sm" onclick="addTodo()">Add</button>
+          </div>
+        </div>
+        <div id="todoList"></div>
+      </div>
+
+      <!-- Notes Grid -->
+      <div class="section-header mb-12">
+        <span class="section-title">Notes</span>
+      </div>
+      <div class="grid grid-auto gap-16" id="notesGrid">
+        <div class="note-add" onclick="openNoteModal()">
+          <span style="font-size:1.5rem">+</span>
+          <span class="text-sm font-bold">New Note</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== CALENDAR ======================== -->
+    <section class="page" id="page-calendar">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Calendar</div>
+          <div class="page-subtitle">Exams, events, and important dates</div>
+        </div>
+        <button class="btn btn-primary" onclick="openEventModal()">+ Add Event</button>
+      </div>
+
+      <div class="grid grid-2 gap-16" style="align-items:start">
+        <!-- Calendar widget -->
+        <div class="card">
+          <div class="cal-header">
+            <button class="btn-icon" onclick="calPrevMonth()">‹</button>
+            <div class="cal-month" id="calMonthLabel">June 2026</div>
+            <button class="btn-icon" onclick="calNextMonth()">›</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+
+        <!-- Events -->
+        <div>
+          <div class="section-header mb-12">
+            <span class="section-title" id="calEventsTitle">All Events</span>
+          </div>
+          <div id="eventList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== ANALYTICS ======================== -->
+    <section class="page" id="page-analytics">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Analytics</div>
+          <div class="page-subtitle">Your performance at a glance</div>
+        </div>
+      </div>
+
+      <!-- Weekly study chart -->
+      <div class="card mb-16">
+        <div class="card-title">Weekly Study Hours</div>
+        <div class="flex items-center" style="gap:24px; margin-top:8px">
+          <div class="week-bar-container" id="weekChart" style="flex:1"></div>
+        </div>
+      </div>
+
+      <div class="analytics-row">
+        <!-- Subject breakdown -->
+        <div class="card">
+          <div class="card-title">Subject Study Time (All Time)</div>
+          <div class="chart-container">
+            <canvas id="subjectPieChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Money pie -->
+        <div class="card">
+          <div class="card-title">Expense Breakdown</div>
+          <div class="chart-container">
+            <canvas id="expensePieChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject targets -->
+      <div class="card mt-16">
+        <div class="card-title">Study Target Progress</div>
+        <div id="analyticsTargets"></div>
+      </div>
+
+      <!-- Summary stats -->
+      <div class="grid grid-4 stat-cards mt-16">
+        <div class="stat-card" data-icon="📅">
+          <div class="stat-label">Total Study Days</div>
+          <div class="stat-value" id="aStudyDays">0</div>
+        </div>
+        <div class="stat-card" data-icon="⏳">
+          <div class="stat-label">Total Study Hours</div>
+          <div class="stat-value" id="aTotalHours">0</div>
+        </div>
+        <div class="stat-card" data-icon="📝">
+          <div class="stat-label">Notes Created</div>
+          <div class="stat-value" id="aNotes">0</div>
+        </div>
+        <div class="stat-card" data-icon="✅">
+          <div class="stat-label">Tasks Completed</div>
+          <div class="stat-value" id="aTasksDone">0</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============================================================
+     MOBILE BOTTOM NAV
+     ============================================================ -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <div class="mobile-nav-item active" data-page="dashboard">
+      <span class="m-icon">⊞</span>Home
+    </div>
+    <div class="mobile-nav-item" data-page="tasks">
+      <span class="m-icon">✓</span>Tasks
+    </div>
+    <div class="mobile-nav-item" data-page="timer">
+      <span class="m-icon">◷</span>Timer
+    </div>
+    <div class="mobile-nav-item" data-page="money">
+      <span class="m-icon">◎</span>Money
+    </div>
+    <div class="mobile-nav-item" data-page="notes">
+      <span class="m-icon">≡</span>Notes
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- Task Modal -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="taskModalTitle">New Task</div>
+      <div class="modal-close" onclick="closeModal('taskModal')">×</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Task Name</label>
+      <input type="text" id="taskNameInput" placeholder="e.g. Morning workout">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Time (optional)</label>
+        <input type="time" id="taskTimeInput">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select id="taskCategoryInput">
+          <option value="📚">📚 Study</option>
+          <option value="💪">💪 Fitness</option>
+          <option value="🍎">🍎 Health</option>
+          <option value="💼">💼 Work</option>
+          <option value="🎯">🎯 Personal</option>
+          <option value="🏠">🏠 Home</option>
+          <option value="📱">📱 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-8 mt-12" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Subject Modal -->
+<div class="modal-overlay" id="subjectModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="subjectModalTitle">New Subject</div>
+      <div class="modal-close" onclick="closeModal('subjectModal')">×</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Subject Name</label>
+      <input type="text" id="subjectNameInput" placeholder="e.g. Mathematics">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Icon (emoji)</label>
+        <input type="text" id="subjectIconInput" placeholder="📐" maxlength="4">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Daily Target (minutes)</label>
+        <input type="number" id="subjectTargetInput" placeholder="60" min="5" max="600">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Color</label>
+      <div class="color-row" id="subjectColorRow"></div>
+    </div>
+    <div class="flex gap-8 mt-12" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('subjectModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSubject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Money Modal -->
+<div class="modal-overlay" id="moneyModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Transaction</div>
+      <div class="modal-close" onclick="closeModal('moneyModal')">×</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <input type="text" id="txNameInput" placeholder="e.g. Grocery shopping">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Amount ($)</label>
+        <input type="number" id="txAmountInput" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select id="txTypeInput">
+          <option value="income">💚 Income</option>
+          <option value="expense">🔴 Expense</option>
+          <option value="savings">💙 Savings</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select id="txCategoryInput">
+          <option>Food & Dining</option>
+          <option>Transport</option>
+          <option>Shopping</option>
+          <option>Entertainment</option>
+          <option>Health</option>
+          <option>Education</option>
+          <option>Utilities</option>
+          <option>Salary</option>
+          <option>Freelance</option>
+          <option>Savings</option>
+          <option>Investment</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" id="txDateInput">
+      </div>
+    </div>
+    <div class="flex gap-8 mt-12" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('moneyModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTransaction()">Add Transaction</button>
+    </div>
+  </div>
+</div>
+
+<!-- Note Modal -->
+<div class="modal-overlay" id="noteModal">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title" id="noteModalTitle">New Note</div>
+      <div class="modal-close" onclick="closeModal('noteModal')">×</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input type="text" id="noteTitleInput" placeholder="Note title...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Content</label>
+      <textarea id="noteBodyInput" placeholder="Write anything..." style="min-height:160px"></textarea>
+    </div>
+    <div class="flex gap-8 mt-12" style="justify-content:flex-end">
+      <button class="btn btn-danger btn-sm" id="noteDeleteBtn" onclick="deleteNote()" style="margin-right:auto;display:none">Delete</button>
+      <button class="btn btn-ghost" onclick="closeModal('noteModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Event Modal -->
+<div class="modal-overlay" id="eventModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Event</div>
+      <div class="modal-close" onclick="closeModal('eventModal')">×</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Event Name</label>
+      <input type="text" id="eventNameInput" placeholder="e.g. Math Exam">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" id="eventDateInput">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select id="eventTypeInput">
+          <option value="exam">📝 Exam</option>
+          <option value="assignment">📋 Assignment</option>
+          <option value="event">🎉 Event</option>
+          <option value="reminder">🔔 Reminder</option>
+          <option value="other">📌 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <input type="text" id="eventNotesInput" placeholder="Any additional details">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Color</label>
+      <div class="color-row" id="eventColorRow"></div>
+    </div>
+    <div class="flex gap-8 mt-12" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('eventModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Add Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- Name Modal -->
+<div class="modal-overlay" id="nameModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Your Name</div>
+      <div class="modal-close" onclick="closeModal('nameModal')">×</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Display Name</label>
+      <input type="text" id="nameInput" placeholder="Your name">
+    </div>
+    <div class="flex gap-8 mt-12" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('nameModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveName()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+/* ============================================================
+   STATE & STORAGE
+   ============================================================ */
+const COLORS = ['#7c6af7','#3ecf8e','#f7a26a','#e25c5c','#3ec6f7','#d97cd9','#f7e26a','#6af7c6','#f76a8e','#6af7f7'];
+
+// Load / save helpers
+const load = (key, def) => { try { const v = localStorage.getItem('lifeos_' + key); return v ? JSON.parse(v) : def; } catch { return def; } };
+const save = (key, val) => { try { localStorage.setItem('lifeos_' + key, JSON.stringify(val)); } catch {} };
+
+// App state
+let state = {
+  userName: load('userName', 'User'),
+  tasks: load('tasks', []),
+  subjects: load('subjects', []),
+  studyLog: load('studyLog', []),
+  transactions: load('transactions', []),
+  notes: load('notes', []),
+  todos: load('todos', []),
+  events: load('events', []),
+  streak: load('streak', { count: 0, lastDate: null }),
+};
+
+let editingTaskId = null;
+let editingSubjectId = null;
+let editingNoteId = null;
+let selectedEventColor = COLORS[0];
+let selectedSubjectColor = COLORS[0];
+let currentPage = 'dashboard';
+
+// Calendar state
+let calYear, calMonth;
+let selectedCalDate = null;
+
+// Timer state
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+let timerSubjectId = null;
+let timerStartEpoch = null;
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
+
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+
+  document.querySelectorAll(`[data-page="${page}"]`).forEach(n => n.classList.add('active'));
+
+  // Refresh page data
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'tasks') renderTaskList();
+  if (page === 'timer') { renderTimerSubjects(); renderStudyLog(); renderTimerTargets(); }
+  if (page === 'subjects') renderSubjectGrid();
+  if (page === 'money') renderMoney();
+  if (page === 'notes') renderNotes();
+  if (page === 'calendar') renderCalendar();
+  if (page === 'analytics') renderAnalytics();
+
+  window.scrollTo(0, 0);
+}
+
+// Nav click handlers
+document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(item => {
+  item.addEventListener('click', () => navigate(item.dataset.page));
+});
+
+/* ============================================================
+   CLOCK & GREETING
+   ============================================================ */
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  const timeEl = document.getElementById('liveTime');
+  if (timeEl) timeEl.textContent = `${h}:${m}:${s}`;
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dateEl = document.getElementById('liveDate');
+  if (dateEl) dateEl.textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+  const yearEl = document.getElementById('liveYear');
+  if (yearEl) yearEl.textContent = now.getFullYear();
+
+  // Day progress (% of day elapsed)
+  const pct = Math.floor(((now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds()) / 86400) * 100);
+  const fill = document.getElementById('dayProgressFill');
+  const pctEl = document.getElementById('dayProgressPct');
+  if (fill) fill.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
+
+  // Greeting
+  const greet = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+  const greetEl = document.getElementById('greeting');
+  if (greetEl) {
+    const nameEl = greetEl.querySelector('span');
+    greetEl.firstChild.textContent = greet + ', ';
+    if (nameEl) nameEl.textContent = state.userName;
+  }
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ============================================================
+   USER NAME
+   ============================================================ */
+function updateNameDisplay() {
+  document.getElementById('sidebarName').textContent = state.userName;
+  document.getElementById('sidebarAvatar').textContent = state.userName.charAt(0).toUpperCase();
+  const nameSpan = document.querySelector('#greeting span');
+  if (nameSpan) nameSpan.textContent = state.userName;
+  document.getElementById('userName').textContent = state.userName;
+}
+
+function openNameModal() {
+  document.getElementById('nameInput').value = state.userName;
+  openModal('nameModal');
+}
+function saveName() {
+  const val = document.getElementById('nameInput').value.trim();
+  if (!val) return;
+  state.userName = val;
+  save('userName', val);
+  updateNameDisplay();
+  closeModal('nameModal');
+  toast('Name updated ✓', 'success');
+}
+
+/* ============================================================
+   STREAK
+   ============================================================ */
+function checkStreak() {
+  const today = new Date().toDateString();
+  const s = state.streak;
+  if (s.lastDate === today) return;
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (s.lastDate === yesterday) {
+    s.count++;
+  } else if (s.lastDate !== today) {
+    // Check if there's any study log today already (so streak resets only if no activity)
+    const todayLog = state.studyLog.filter(l => new Date(l.date).toDateString() === today);
+    if (todayLog.length === 0 && s.lastDate !== yesterday) s.count = 0;
+  }
+  s.lastDate = today;
+  save('streak', s);
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard() {
+  updateNameDisplay();
+  checkStreak();
+
+  // Streak
+  document.getElementById('dashStreak').textContent = state.streak.count;
+
+  // Today's study
+  const today = new Date().toDateString();
+  const todaySecs = state.studyLog
+    .filter(l => new Date(l.date).toDateString() === today)
+    .reduce((acc, l) => acc + l.duration, 0);
+  const th = Math.floor(todaySecs / 3600);
+  const tm = Math.floor((todaySecs % 3600) / 60);
+  document.getElementById('dashTodayStudy').textContent = `${th}h ${tm}m`;
+
+  // Tasks
+  const done = state.tasks.filter(t => t.done).length;
+  document.getElementById('dashTasksDone').textContent = `${done}/${state.tasks.length}`;
+
+  // Balance
+  const balance = calcBalance();
+  document.getElementById('dashBalance').textContent = '$' + balance.net.toFixed(2);
+
+  // Day progress desc
+  const dpDesc = document.getElementById('dayProgressDesc');
+  if (dpDesc) dpDesc.textContent = `${done} of ${state.tasks.length} tasks completed today`;
+
+  // Task progress bar
+  const pct = state.tasks.length ? Math.round((done / state.tasks.length) * 100) : 0;
+  ['taskProgressFill','dayProgressFill'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = pct + '%';
+  });
+  ['taskProgressPct','dayProgressPct'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = pct + '%';
+  });
+
+  // Recent tasks (up to 4)
+  const rtEl = document.getElementById('dashRecentTasks');
+  if (!state.tasks.length) {
+    rtEl.innerHTML = `<div class="empty-state" style="padding:20px"><div class="es-icon">📋</div><div class="es-sub">No tasks yet</div></div>`;
+  } else {
+    rtEl.innerHTML = state.tasks.slice(0,4).map(t => taskItemHTML(t, true)).join('');
+  }
+
+  // Recent study
+  const rsEl = document.getElementById('dashRecentStudy');
+  if (!state.studyLog.length) {
+    rsEl.innerHTML = `<div class="empty-state" style="padding:20px"><div class="es-icon">📚</div><div class="es-sub">No sessions yet</div></div>`;
+  } else {
+    rsEl.innerHTML = state.studyLog.slice(0,5).map(logItemHTML).join('');
+  }
+}
+
+/* ============================================================
+   TASKS
+   ============================================================ */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function openTaskModal(id) {
+  editingTaskId = id || null;
+  const t = id ? state.tasks.find(x => x.id === id) : null;
+  document.getElementById('taskModalTitle').textContent = id ? 'Edit Task' : 'New Task';
+  document.getElementById('taskNameInput').value = t ? t.name : '';
+  document.getElementById('taskTimeInput').value = t ? (t.time || '') : '';
+  document.getElementById('taskCategoryInput').value = t ? (t.category || '📚') : '📚';
+  openModal('taskModal');
+  setTimeout(() => document.getElementById('taskNameInput').focus(), 100);
+}
+
+function saveTask() {
+  const name = document.getElementById('taskNameInput').value.trim();
+  if (!name) { toast('Task name required', 'warn'); return; }
+  const time = document.getElementById('taskTimeInput').value;
+  const category = document.getElementById('taskCategoryInput').value;
+
+  if (editingTaskId) {
+    const t = state.tasks.find(x => x.id === editingTaskId);
+    if (t) { t.name = name; t.time = time; t.category = category; }
+    toast('Task updated ✓', 'success');
+  } else {
+    state.tasks.push({ id: uid(), name, time, category, done: false, createdAt: Date.now() });
+    toast('Task added ✓', 'success');
+  }
+  save('tasks', state.tasks);
+  closeModal('taskModal');
+  renderTaskList();
+  renderDashboard();
+}
+
+function toggleTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (t) {
+    t.done = !t.done;
+    save('tasks', state.tasks);
+    renderTaskList();
+    renderDashboard();
+  }
+}
+
+function deleteTask(id) {
+  state.tasks = state.tasks.filter(x => x.id !== id);
+  save('tasks', state.tasks);
+  renderTaskList();
+  renderDashboard();
+  toast('Task deleted', 'info');
+}
+
+function taskItemHTML(t, compact = false) {
+  const timeStr = t.time ? `<span class="task-time">${t.time}</span>` : '';
+  return `
+  <div class="task-item ${t.done ? 'done' : ''}" id="task-${t.id}">
+    <div class="task-check" onclick="toggleTask('${t.id}')">${t.done ? '✓' : ''}</div>
+    <span style="font-size:1rem">${t.category}</span>
+    <span class="task-name">${escHtml(t.name)}</span>
+    ${timeStr}
+    ${compact ? '' : `<div class="task-actions">
+      <button class="btn-icon" onclick="openTaskModal('${t.id}')" title="Edit">✎</button>
+      <button class="btn-icon" style="color:var(--red)" onclick="deleteTask('${t.id}')" title="Delete">✕</button>
+    </div>`}
+  </div>`;
+}
+
+function renderTaskList() {
+  const el = document.getElementById('taskList');
+  if (!el) return;
+  if (!state.tasks.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">📋</div><div class="es-title">No tasks yet</div><div class="es-sub">Add your first daily task to get started</div></div>`;
+    return;
+  }
+  // Sort: pending first, then time
+  const sorted = [...state.tasks].sort((a,b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    if (a.time && b.time) return a.time.localeCompare(b.time);
+    return 0;
+  });
+  el.innerHTML = sorted.map(t => taskItemHTML(t)).join('');
+
+  // Update progress
+  const done = state.tasks.filter(t => t.done).length;
+  const pct = state.tasks.length ? Math.round((done / state.tasks.length) * 100) : 0;
+  const pf = document.getElementById('taskProgressFill');
+  const pp = document.getElementById('taskProgressPct');
+  if (pf) pf.style.width = pct + '%';
+  if (pp) pp.textContent = pct + '%';
+}
+
+/* ============================================================
+   SUBJECTS
+   ============================================================ */
+function buildColorRow(containerId, selectedColor, onPick) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = COLORS.map(c => `
+    <div class="color-swatch ${c===selectedColor?'selected':''}" style="background:${c}" onclick="${onPick}('${c}','${containerId}')"></div>
+  `).join('');
+}
+
+function pickSubjectColor(color, containerId) {
+  selectedSubjectColor = color;
+  buildColorRow(containerId, color, 'pickSubjectColor');
+}
+function pickEventColor(color, containerId) {
+  selectedEventColor = color;
+  buildColorRow(containerId, color, 'pickEventColor');
+}
+
+function openSubjectModal(id) {
+  editingSubjectId = id || null;
+  const s = id ? state.subjects.find(x => x.id === id) : null;
+  document.getElementById('subjectModalTitle').textContent = id ? 'Edit Subject' : 'New Subject';
+  document.getElementById('subjectNameInput').value = s ? s.name : '';
+  document.getElementById('subjectIconInput').value = s ? s.icon : '';
+  document.getElementById('subjectTargetInput').value = s ? s.target : '60';
+  selectedSubjectColor = s ? s.color : COLORS[state.subjects.length % COLORS.length];
+  buildColorRow('subjectColorRow', selectedSubjectColor, 'pickSubjectColor');
+  openModal('subjectModal');
+}
+
+function saveSubject() {
+  const name = document.getElementById('subjectNameInput').value.trim();
+  if (!name) { toast('Subject name required', 'warn'); return; }
+  const icon = document.getElementById('subjectIconInput').value.trim() || '📖';
+  const target = parseInt(document.getElementById('subjectTargetInput').value) || 60;
+
+  if (editingSubjectId) {
+    const s = state.subjects.find(x => x.id === editingSubjectId);
+    if (s) { s.name = name; s.icon = icon; s.target = target; s.color = selectedSubjectColor; }
+    toast('Subject updated ✓', 'success');
+  } else {
+    state.subjects.push({ id: uid(), name, icon, target, color: selectedSubjectColor });
+    toast('Subject added ✓', 'success');
+  }
+  save('subjects', state.subjects);
+  closeModal('subjectModal');
+  renderSubjectGrid();
+  renderTimerSubjects();
+}
+
+function deleteSubject(id) {
+  if (!confirm('Delete this subject and all its study data?')) return;
+  state.subjects = state.subjects.filter(x => x.id !== id);
+  state.studyLog = state.studyLog.filter(x => x.subjectId !== id);
+  save('subjects', state.subjects);
+  save('studyLog', state.studyLog);
+  renderSubjectGrid();
+  renderTimerSubjects();
+  toast('Subject deleted', 'info');
+}
+
+function getTodayStudy(subjectId) {
+  const today = new Date().toDateString();
+  return state.studyLog
+    .filter(l => l.subjectId === subjectId && new Date(l.date).toDateString() === today)
+    .reduce((acc, l) => acc + l.duration, 0);
+}
+
+function renderSubjectGrid() {
+  const el = document.getElementById('subjectGrid');
+  if (!el) return;
+  if (!state.subjects.length) {
+    el.innerHTML = `<div class="note-add" onclick="openSubjectModal()"><span style="font-size:1.5rem">+</span><span class="text-sm font-bold">Add Subject</span></div>`;
+    return;
+  }
+  el.innerHTML = state.subjects.map(s => {
+    const todaySecs = getTodayStudy(s.id);
+    const targetSecs = s.target * 60;
+    const pct = Math.min(100, Math.round((todaySecs / targetSecs) * 100));
+    const th = Math.floor(todaySecs/3600);
+    const tm = Math.floor((todaySecs%3600)/60);
+    return `
+    <div class="subject-card" style="border-top: 3px solid ${s.color}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="subject-icon">${s.icon}</div>
+        <div style="display:flex;gap:4px">
+          <button class="btn-icon" onclick="openSubjectModal('${s.id}')" title="Edit">✎</button>
+          <button class="btn-icon" style="color:var(--red)" onclick="deleteSubject('${s.id}')" title="Delete">✕</button>
+        </div>
+      </div>
+      <div class="subject-name">${escHtml(s.name)}</div>
+      <div class="subject-today">${th}h ${tm}m today · target ${s.target}min</div>
+      <div class="subject-bar">
+        <div class="subject-fill" style="width:${pct}%;background:${s.color}"></div>
+      </div>
+      <div class="text-xs text-muted mt-4">${pct}% of daily target</div>
+    </div>`;
+  }).join('') + `<div class="note-add" onclick="openSubjectModal()"><span style="font-size:1.5rem">+</span><span class="text-sm font-bold">Add Subject</span></div>`;
+}
+
+/* ============================================================
+   STUDY TIMER
+   ============================================================ */
+function renderTimerSubjects() {
+  const el = document.getElementById('timerSubjectBar');
+  if (!el) return;
+  if (!state.subjects.length) {
+    el.innerHTML = `<button class="btn btn-ghost btn-sm" onclick="navigate('subjects')">+ Add Subjects</button>`;
+    return;
+  }
+  el.innerHTML = state.subjects.map(s => `
+    <div class="subject-pill ${timerSubjectId===s.id?'selected':''}"
+      style="color:${timerSubjectId===s.id?'#fff':s.color};border-color:${s.color};background:${timerSubjectId===s.id?s.color:'transparent'}"
+      onclick="selectTimerSubject('${s.id}')">
+      ${s.icon} ${escHtml(s.name)}
+    </div>
+  `).join('');
+}
+
+function selectTimerSubject(id) {
+  if (timerRunning) { toast("Stop the timer first", 'warn'); return; }
+  timerSubjectId = id;
+  renderTimerSubjects();
+}
+
+function formatSeconds(s) {
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const sec = s%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function timerTick() {
+  timerSeconds++;
+  const el = document.getElementById('timerDisplay');
+  if (el) el.textContent = formatSeconds(timerSeconds);
+}
+
+function timerStart() {
+  if (!timerSubjectId) { toast('Select a subject first', 'warn'); return; }
+  timerRunning = true;
+  timerStartEpoch = Date.now();
+  timerInterval = setInterval(timerTick, 1000);
+  document.getElementById('timerStartBtn').classList.add('hidden');
+  document.getElementById('timerStopBtn').classList.remove('hidden');
+}
+
+function timerStop() {
+  if (!timerRunning) return;
+  clearInterval(timerInterval);
+  timerRunning = false;
+
+  // Save session
+  const subj = state.subjects.find(x => x.id === timerSubjectId);
+  if (subj && timerSeconds > 0) {
+    state.studyLog.unshift({
+      id: uid(),
+      subjectId: timerSubjectId,
+      subjectName: subj.name,
+      subjectColor: subj.color,
+      subjectIcon: subj.icon,
+      duration: timerSeconds,
+      date: new Date().toISOString(),
+    });
+    save('studyLog', state.studyLog);
+
+    // Update streak
+    const today = new Date().toDateString();
+    const s = state.streak;
+    if (s.lastDate !== today) {
+      const yesterday = new Date(Date.now()-86400000).toDateString();
+      s.count = (s.lastDate === yesterday) ? s.count + 1 : 1;
+      s.lastDate = today;
+      save('streak', s);
+    }
+
+    const m = Math.floor(timerSeconds/60);
+    toast(`${subj.icon} ${m} min saved!`, 'success');
+  }
+
+  document.getElementById('timerStartBtn').classList.remove('hidden');
+  document.getElementById('timerStopBtn').classList.add('hidden');
+  timerReset();
+  renderStudyLog();
+  renderTimerTargets();
+}
+
+function timerReset() {
+  if (timerRunning) { clearInterval(timerInterval); timerRunning = false; }
+  timerSeconds = 0;
+  const el = document.getElementById('timerDisplay');
+  if (el) el.textContent = '00:00:00';
+  document.getElementById('timerStartBtn').classList.remove('hidden');
+  document.getElementById('timerStopBtn').classList.add('hidden');
+}
+
+function logItemHTML(l) {
+  const d = Math.floor(l.duration/3600);
+  const m = Math.floor((l.duration%3600)/60);
+  const s = l.duration%60;
+  const timeStr = d > 0 ? `${d}h ${m}m` : `${m}m ${s}s`;
+  const dateStr = new Date(l.date).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  return `
+  <div class="study-log-item">
+    <div class="study-log-dot" style="background:${l.subjectColor}"></div>
+    <span style="font-size:1rem">${l.subjectIcon||'📖'}</span>
+    <div class="study-log-name">${escHtml(l.subjectName)}</div>
+    <div class="study-log-time">${timeStr}</div>
+    <div class="study-log-date">${dateStr}</div>
+  </div>`;
+}
+
+function renderStudyLog() {
+  const el = document.getElementById('studyLog');
+  if (!el) return;
+  if (!state.studyLog.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">⏱</div><div class="es-title">No sessions yet</div><div class="es-sub">Start the timer to log a session</div></div>`;
+    return;
+  }
+  el.innerHTML = state.studyLog.slice(0,20).map(logItemHTML).join('');
+}
+
+function clearStudyLog() {
+  if (!confirm('Clear all study log entries?')) return;
+  state.studyLog = [];
+  save('studyLog', state.studyLog);
+  renderStudyLog();
+  renderTimerTargets();
+  toast('Study log cleared', 'info');
+}
+
+function renderTimerTargets() {
+  const el = document.getElementById('timerTargets');
+  if (!el) return;
+  if (!state.subjects.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:20px"><div class="es-icon">🎯</div><div class="es-sub">Add subjects first</div></div>`;
+    return;
+  }
+  el.innerHTML = state.subjects.map(s => {
+    const todaySecs = getTodayStudy(s.id);
+    const targetSecs = s.target * 60;
+    const pct = Math.min(100, Math.round((todaySecs/targetSecs)*100));
+    const tm = Math.floor(todaySecs/60);
+    return `
+    <div class="target-row">
+      <div class="target-header">
+        <div class="target-name"><span style="color:${s.color}">${s.icon}</span> ${escHtml(s.name)}</div>
+        <div class="target-stat">${tm}/${s.target}m</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${pct}%;background:${s.color}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   MONEY TRACKER
+   ============================================================ */
+function calcBalance() {
+  let income = 0, expenses = 0, savings = 0;
+  state.transactions.forEach(t => {
+    const a = parseFloat(t.amount);
+    if (t.type === 'income') income += a;
+    else if (t.type === 'expense') expenses += a;
+    else if (t.type === 'savings') savings += a;
+  });
+  return { income, expenses, savings, net: income - expenses };
+}
+
+function openMoneyModal() {
+  document.getElementById('txNameInput').value = '';
+  document.getElementById('txAmountInput').value = '';
+  document.getElementById('txTypeInput').value = 'expense';
+  document.getElementById('txCategoryInput').value = 'Food & Dining';
+  document.getElementById('txDateInput').value = new Date().toISOString().slice(0,10);
+  openModal('moneyModal');
+}
+
+function saveTransaction() {
+  const name = document.getElementById('txNameInput').value.trim();
+  const amount = parseFloat(document.getElementById('txAmountInput').value);
+  if (!name) { toast('Description required', 'warn'); return; }
+  if (isNaN(amount) || amount <= 0) { toast('Valid amount required', 'warn'); return; }
+
+  state.transactions.unshift({
+    id: uid(),
+    name,
+    amount,
+    type: document.getElementById('txTypeInput').value,
+    category: document.getElementById('txCategoryInput').value,
+    date: document.getElementById('txDateInput').value,
+  });
+  save('transactions', state.transactions);
+  closeModal('moneyModal');
+  renderMoney();
+  toast('Transaction added ✓', 'success');
+}
+
+function deleteTransaction(id) {
+  state.transactions = state.transactions.filter(x => x.id !== id);
+  save('transactions', state.transactions);
+  renderMoney();
+  toast('Transaction deleted', 'info');
+}
+
+const TX_ICONS = { income:'💚', expense:'🔴', savings:'💙' };
+
+function renderMoney() {
+  const b = calcBalance();
+  document.getElementById('moneyBalance').textContent = '$' + b.net.toFixed(2);
+  document.getElementById('moneyIncome').textContent = '$' + b.income.toFixed(2);
+  document.getElementById('moneyExpenses').textContent = '$' + b.expenses.toFixed(2);
+  document.getElementById('dashBalance').textContent = '$' + b.net.toFixed(2);
+  document.getElementById('txCount').textContent = state.transactions.length + ' entries';
+
+  // Transaction list
+  const el = document.getElementById('txList');
+  if (!state.transactions.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">💰</div><div class="es-title">No transactions</div><div class="es-sub">Add your first transaction</div></div>`;
+  } else {
+    el.innerHTML = state.transactions.slice(0,30).map(t => {
+      const sign = t.type === 'income' ? '+' : t.type === 'savings' ? '↗' : '-';
+      const color = t.type === 'income' ? 'var(--green)' : t.type === 'savings' ? 'var(--cyan)' : 'var(--red)';
+      const bg = t.type === 'income' ? 'var(--green-dim)' : t.type === 'savings' ? 'var(--cyan-dim)' : 'var(--red-dim)';
+      return `
+      <div class="tx-item">
+        <div class="tx-dot" style="background:${bg}">${TX_ICONS[t.type]}</div>
+        <div class="tx-info">
+          <div class="tx-name">${escHtml(t.name)}</div>
+          <div class="tx-category">${t.category} · ${t.date}</div>
+        </div>
+        <div class="tx-amount" style="color:${color}">${sign}$${parseFloat(t.amount).toFixed(2)}</div>
+        <button class="btn-icon tx-del" style="color:var(--red)" onclick="deleteTransaction('${t.id}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  drawMoneyChart();
+}
+
+/* ============================================================
+   NOTES & TODOS
+   ============================================================ */
+function openNoteModal(id) {
+  editingNoteId = id || null;
+  const n = id ? state.notes.find(x => x.id === id) : null;
+  document.getElementById('noteModalTitle').textContent = id ? 'Edit Note' : 'New Note';
+  document.getElementById('noteTitleInput').value = n ? n.title : '';
+  document.getElementById('noteBodyInput').value = n ? n.body : '';
+  const delBtn = document.getElementById('noteDeleteBtn');
+  delBtn.style.display = id ? 'inline-flex' : 'none';
+  openModal('noteModal');
+}
+
+function saveNote() {
+  const title = document.getElementById('noteTitleInput').value.trim() || 'Untitled';
+  const body = document.getElementById('noteBodyInput').value.trim();
+  if (editingNoteId) {
+    const n = state.notes.find(x => x.id === editingNoteId);
+    if (n) { n.title = title; n.body = body; n.updatedAt = Date.now(); }
+    toast('Note updated ✓', 'success');
+  } else {
+    state.notes.unshift({ id: uid(), title, body, createdAt: Date.now(), updatedAt: Date.now() });
+    toast('Note saved ✓', 'success');
+  }
+  save('notes', state.notes);
+  closeModal('noteModal');
+  renderNotes();
+}
+
+function deleteNote() {
+  if (!editingNoteId) return;
+  state.notes = state.notes.filter(x => x.id !== editingNoteId);
+  save('notes', state.notes);
+  closeModal('noteModal');
+  renderNotes();
+  toast('Note deleted', 'info');
+}
+
+function renderNotes() {
+  const grid = document.getElementById('notesGrid');
+  if (!grid) return;
+  const noteCards = state.notes.map(n => {
+    const d = new Date(n.updatedAt).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    return `
+    <div class="note-card" onclick="openNoteModal('${n.id}')">
+      <div class="note-title">${escHtml(n.title)}</div>
+      <div class="note-body">${escHtml(n.body)}</div>
+      <div class="note-date">${d}</div>
+    </div>`;
+  }).join('');
+  grid.innerHTML = noteCards + `<div class="note-add" onclick="openNoteModal()"><span style="font-size:1.5rem">+</span><span class="text-sm font-bold">New Note</span></div>`;
+}
+
+// TODOS
+function addTodo() {
+  const input = document.getElementById('todoInput');
+  const text = input.value.trim();
+  if (!text) return;
+  state.todos.unshift({ id: uid(), text, done: false });
+  save('todos', state.todos);
+  input.value = '';
+  renderTodos();
+}
+
+function toggleTodo(id) {
+  const t = state.todos.find(x => x.id === id);
+  if (t) { t.done = !t.done; save('todos', state.todos); renderTodos(); }
+}
+
+function deleteTodo(id) {
+  state.todos = state.todos.filter(x => x.id !== id);
+  save('todos', state.todos);
+  renderTodos();
+}
+
+function renderTodos() {
+  const el = document.getElementById('todoList');
+  if (!el) return;
+  if (!state.todos.length) {
+    el.innerHTML = `<div class="text-sm text-muted" style="padding:8px 0">No to-dos yet. Type above and press Enter.</div>`;
+    return;
+  }
+  el.innerHTML = state.todos.map(t => `
+    <div class="task-item ${t.done?'done':''}">
+      <div class="task-check" onclick="toggleTodo('${t.id}')">${t.done?'✓':''}</div>
+      <span class="task-name">${escHtml(t.text)}</span>
+      <button class="btn-icon" style="color:var(--red);opacity:0.6" onclick="deleteTodo('${t.id}')">✕</button>
+    </div>`).join('');
+}
+
+/* ============================================================
+   CALENDAR
+   ============================================================ */
+function initCalendar() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+}
+
+function calPrevMonth() {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+function calNextMonth() {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calMonthLabel').textContent = `${months[calMonth]} ${calYear}`;
+
+  const grid = document.getElementById('calGrid');
+  const dayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date();
+
+  // Get all event dates
+  const eventDates = new Set(state.events.map(e => e.date));
+
+  let html = dayLabels.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+
+  // Prev month overflow
+  for (let i = firstDay - 1; i >= 0; i--) {
+    html += `<div class="cal-day other-month">${daysInPrev - i}</div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = today.getFullYear()===calYear && today.getMonth()===calMonth && today.getDate()===d;
+    const isSelected = selectedCalDate === dateStr;
+    const hasEvent = eventDates.has(dateStr);
+    const cls = [
+      'cal-day',
+      isToday ? 'today' : '',
+      isSelected ? 'selected' : '',
+      hasEvent ? 'has-event' : '',
+    ].filter(Boolean).join(' ');
+    html += `<div class="${cls}" onclick="selectCalDay('${dateStr}')">${d}</div>`;
+  }
+
+  // Fill remaining
+  const total = firstDay + daysInMonth;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let d = 1; d <= remaining; d++) {
+    html += `<div class="cal-day other-month">${d}</div>`;
+  }
+
+  grid.innerHTML = html;
+  renderEventList();
+}
+
+function selectCalDay(date) {
+  selectedCalDate = selectedCalDate === date ? null : date;
+  renderCalendar();
+}
+
+function openEventModal() {
+  document.getElementById('eventNameInput').value = '';
+  document.getElementById('eventDateInput').value = selectedCalDate || new Date().toISOString().slice(0,10);
+  document.getElementById('eventTypeInput').value = 'exam';
+  document.getElementById('eventNotesInput').value = '';
+  selectedEventColor = COLORS[0];
+  buildColorRow('eventColorRow', selectedEventColor, 'pickEventColor');
+  openModal('eventModal');
+}
+
+function saveEvent() {
+  const name = document.getElementById('eventNameInput').value.trim();
+  const date = document.getElementById('eventDateInput').value;
+  if (!name) { toast('Event name required', 'warn'); return; }
+  if (!date) { toast('Date required', 'warn'); return; }
+
+  state.events.push({
+    id: uid(),
+    name,
+    date,
+    type: document.getElementById('eventTypeInput').value,
+    notes: document.getElementById('eventNotesInput').value.trim(),
+    color: selectedEventColor,
+  });
+  state.events.sort((a,b) => a.date.localeCompare(b.date));
+  save('events', state.events);
+  closeModal('eventModal');
+  renderCalendar();
+  toast('Event added ✓', 'success');
+}
+
+function deleteEvent(id) {
+  state.events = state.events.filter(x => x.id !== id);
+  save('events', state.events);
+  renderCalendar();
+  toast('Event deleted', 'info');
+}
+
+const EVENT_ICONS = { exam:'📝', assignment:'📋', event:'🎉', reminder:'🔔', other:'📌' };
+
+function renderEventList() {
+  const el = document.getElementById('eventList');
+  if (!el) return;
+  let events = state.events;
+  if (selectedCalDate) {
+    events = events.filter(e => e.date === selectedCalDate);
+    document.getElementById('calEventsTitle').textContent = selectedCalDate ? `Events on ${selectedCalDate}` : 'All Events';
+  } else {
+    document.getElementById('calEventsTitle').textContent = 'Upcoming Events';
+    const today = new Date().toISOString().slice(0,10);
+    events = events.filter(e => e.date >= today).slice(0,15);
+  }
+
+  if (!events.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">📅</div><div class="es-title">No events</div><div class="es-sub">${selectedCalDate ? 'No events on this day' : 'Add your first event'}</div></div>`;
+    return;
+  }
+  el.innerHTML = events.map(e => `
+    <div class="event-item">
+      <div class="event-dot" style="background:${e.color}"></div>
+      <div style="font-size:1.1rem">${EVENT_ICONS[e.type]||'📌'}</div>
+      <div class="event-info">
+        <div class="event-name">${escHtml(e.name)}</div>
+        <div class="event-date">${e.date}${e.notes ? ' · ' + escHtml(e.notes) : ''}</div>
+      </div>
+      <button class="btn-icon event-del" style="color:var(--red)" onclick="deleteEvent('${e.id}')">✕</button>
+    </div>`).join('');
+}
+
+/* ============================================================
+   ANALYTICS
+   ============================================================ */
+function renderAnalytics() {
+  // Week chart
+  renderWeekChart();
+
+  // Subject totals
+  const totalSecs = state.studyLog.reduce((a, l) => a + l.duration, 0);
+  const totalHours = Math.floor(totalSecs / 3600);
+  document.getElementById('aTotalHours').textContent = totalHours;
+
+  // Study days
+  const studyDays = new Set(state.studyLog.map(l => new Date(l.date).toDateString())).size;
+  document.getElementById('aStudyDays').textContent = studyDays;
+
+  document.getElementById('aNotes').textContent = state.notes.length;
+  document.getElementById('aTasksDone').textContent = state.tasks.filter(t => t.done).length;
+
+  // Target progress
+  const targetsEl = document.getElementById('analyticsTargets');
+  if (!state.subjects.length) {
+    targetsEl.innerHTML = `<div class="empty-state" style="padding:20px"><div class="es-icon">📊</div><div class="es-sub">Add subjects to see progress</div></div>`;
+  } else {
+    targetsEl.innerHTML = state.subjects.map(s => {
+      const todaySecs = getTodayStudy(s.id);
+      const pct = Math.min(100, Math.round((todaySecs/(s.target*60))*100));
+      const tm = Math.floor(todaySecs/60);
+      return `
+      <div class="target-row">
+        <div class="target-header">
+          <div class="target-name"><span style="color:${s.color}">${s.icon}</span> ${escHtml(s.name)}</div>
+          <div class="target-stat">${tm}/${s.target}m · ${pct}%</div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${pct}%;background:${s.color}"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  drawSubjectPie();
+  drawExpensePie();
+}
+
+function renderWeekChart() {
+  const el = document.getElementById('weekChart');
+  if (!el) return;
+
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const now = new Date();
+  const dayData = Array.from({length:7}, (_,i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() - (6-i));
+    const ds = d.toDateString();
+    const secs = state.studyLog.filter(l => new Date(l.date).toDateString()===ds).reduce((a,l)=>a+l.duration,0);
+    return { label: days[d.getDay()], hours: secs/3600 };
+  });
+
+  const maxH = Math.max(...dayData.map(d=>d.hours), 1);
+  el.innerHTML = dayData.map(d => {
+    const h = Math.round((d.hours/maxH)*100);
+    const isToday = d.label === days[now.getDay()];
+    return `
+    <div class="week-bar-col">
+      <div class="week-bar-wrap" style="flex:1;width:100%">
+        <div class="week-bar-fill" style="height:${h}%;background:${isToday?'var(--violet)':'var(--violet)'};opacity:${isToday?1:0.45}"></div>
+      </div>
+      <div class="week-bar-label">${d.label}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   CANVAS CHARTS (lightweight, no dependencies)
+   ============================================================ */
+function drawPieChart(canvasId, labels, values, colors) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 300;
+  const H = canvas.offsetHeight || 180;
+  canvas.width = W;
+  canvas.height = H;
+  ctx.clearRect(0,0,W,H);
+
+  const total = values.reduce((a,b)=>a+b,0);
+  if (total === 0) {
+    ctx.fillStyle = '#2a2a38';
+    ctx.beginPath();
+    ctx.arc(W/2, H/2, Math.min(W,H)/2-20, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#6b6b80';
+    ctx.font = '13px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data yet', W/2, H/2+4);
+    return;
+  }
+
+  const cx = W * 0.35;
+  const cy = H / 2;
+  const r = Math.min(cx, cy) - 16;
+  const innerR = r * 0.55;
+
+  let start = -Math.PI/2;
+  values.forEach((v, i) => {
+    const slice = (v/total) * Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, start+slice);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+    start += slice;
+  });
+
+  // Inner circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, innerR, 0, Math.PI*2);
+  ctx.fillStyle = '#16161f';
+  ctx.fill();
+
+  // Legend
+  const legX = W * 0.68;
+  let legY = H/2 - (labels.length*16)/2;
+  labels.forEach((lbl, i) => {
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(legX, legY-7, 10, 10);
+    ctx.fillStyle = '#9999aa';
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'left';
+    const pct = total > 0 ? Math.round((values[i]/total)*100) : 0;
+    ctx.fillText(`${lbl} ${pct}%`, legX+15, legY+3);
+    legY += 20;
+  });
+}
+
+function drawMoneyChart() {
+  // Expense by category
+  const cats = {};
+  state.transactions.filter(t => t.type === 'expense').forEach(t => {
+    cats[t.category] = (cats[t.category]||0) + parseFloat(t.amount);
+  });
+  const labels = Object.keys(cats);
+  const values = Object.values(cats);
+  drawPieChart('moneyChart', labels, values, COLORS);
+}
+
+function drawSubjectPie() {
+  const subs = {};
+  state.studyLog.forEach(l => {
+    subs[l.subjectName] = (subs[l.subjectName]||0) + l.duration/3600;
+  });
+  const labels = Object.keys(subs);
+  const values = Object.values(subs);
+  const colors = labels.map(n => {
+    const s = state.subjects.find(x => x.name === n);
+    return s ? s.color : COLORS[0];
+  });
+  drawPieChart('subjectPieChart', labels, values, colors);
+}
+
+function drawExpensePie() {
+  const cats = {};
+  state.transactions.filter(t => t.type === 'expense').forEach(t => {
+    cats[t.category] = (cats[t.category]||0) + parseFloat(t.amount);
+  });
+  drawPieChart('expensePieChart', Object.keys(cats), Object.values(cats), COLORS);
+}
+
+/* ============================================================
+   MODAL HELPERS
+   ============================================================ */
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal(overlay.id);
+  });
+});
+
+// Close on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
+  }
+});
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function toast(msg, type = 'info') {
+  const icons = { success:'✓', warn:'⚠', info:'ℹ', error:'✕' };
+  const colors = { success:'var(--green)', warn:'var(--amber)', info:'var(--violet)', error:'var(--red)' };
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<span class="toast-icon" style="color:${colors[type]}">${icons[type]}</span><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => {
+    el.classList.add('removing');
+    setTimeout(() => el.remove(), 300);
+  }, 2800);
+}
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  updateNameDisplay();
+  initCalendar();
+  renderDashboard();
+  renderTaskList();
+  renderTodos();
+  renderNotes();
+
+  // Set default date inputs
+  const today = new Date().toISOString().slice(0,10);
+  const txDate = document.getElementById('txDateInput');
+  if (txDate) txDate.value = today;
+  const evDate = document.getElementById('eventDateInput');
+  if (evDate) evDate.value = today;
+}
+
+init();
+</script>
+</body>
+</html>
